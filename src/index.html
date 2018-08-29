@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>COSC2626 Chat App</title>
+</head>
+<body>
+  <h2>Chat App</h2>
+
+  <ul id="messages"></ul>
+  <input id="message" type="text">
+  <button id="send">Send</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io.connect({ transports: ['websocket', 'polling'] })
+
+    socket.on('message', message => {
+      appendMessage(message)
+    })
+
+    document.querySelector('#send').addEventListener('click', () => {
+      const message = document.querySelector('#message')
+      appendMessage(message.value)
+      socket.emit('message', message.value)
+      message.value = ''
+    })
+
+    function appendMessage (message) {
+      const messages = document.querySelector('#messages')
+      const newMessage = document.createElement('li')
+      const messageTextNode = document.createTextNode(message)
+      newMessage.appendChild(messageTextNode)
+      messages.appendChild(newMessage)
+    }
+  </script>
+</body>
+</html>
