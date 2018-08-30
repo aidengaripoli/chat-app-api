@@ -2,7 +2,7 @@
   "name": "chat-app-api",
   "version": "0.1.0",
   "description": "COSC2626 Assignment 2 - Chat App",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "test": "test"

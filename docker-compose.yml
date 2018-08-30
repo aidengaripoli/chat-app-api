@@ -1,0 +1,30 @@
+version: '3.1'
+
+services:
+  api:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+    command: nodemon --inspect=0.0.0.0:9229
+    ports:
+      - "80:3000"
+      - "9229:9229"
+    volumes:
+      - .:/opt/app:delegated
+      - ./package.json:/opt/package.json
+      - ./package-lock.json:/opt/package-lock.json
+      - notused:/opt/app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on: 
+      - redis
+    user: root
+
+  redis:
+    image: redis:4.0.11-alpine
+    expose:
+      - "6379"
+  
+volumes:
+  notused:

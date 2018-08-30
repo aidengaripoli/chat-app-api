@@ -4,10 +4,14 @@ const http = require('http').Server(app)
 const io = require('socket.io')(http, { transports: ['websocket', 'polling'] })
 const redisAdapter = require('socket.io-redis')
 
-io.adapter(redisAdapter({ host: 'localhost', port: 6379 }))
+io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
 
 app.get('/', (req, res) => {
   res.status(200).sendFile(`${__dirname}/index.html`)
+})
+
+app.get('/health', (req, res) => {
+  res.status(200).end()
 })
 
 io.on('connection', socket => {
