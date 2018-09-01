@@ -17,6 +17,12 @@
   <script>
     const socket = io.connect({ transports: ['websocket', 'polling'] })
 
+    socket.on('messages', messages => {
+      messages.forEach(message => {
+        appendMessage(message)
+      })
+    })
+
     socket.on('message', message => {
       appendMessage(message)
     })

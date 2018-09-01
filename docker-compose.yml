@@ -1,15 +1,23 @@
 version: '3.1'
 
 services:
+  traefik:
+    image: traefik:1.6.6-alpine
+    command: --api --docker
+    ports:
+      - "80:80"
+      - "8000:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
   api:
     build:
       context: .
       args:
         - NODE_ENV=development
-    command: nodemon --inspect=0.0.0.0:9229
-    ports:
-      - "80:3000"
-      - "9229:9229"
+    command: nodemon
+    expose:
+      - "3000"
     volumes:
       - .:/opt/app:delegated
       - ./package.json:/opt/package.json
@@ -17,9 +25,11 @@ services:
       - notused:/opt/app/node_modules
     environment:
       - NODE_ENV=development
-    depends_on: 
+    depends_on:
       - redis
     user: root
+    labels:
+      - "traefik.frontend.rule=PathPrefix:/"
 
   redis:
     image: redis:4.0.11-alpine
