@@ -28,12 +28,12 @@ io.on('connection', async socket => {
     })
   })
 
-  socket.on('newMessage', async msg => {
-    console.log(`Received: ${msg} from user: ${socket.user.username}`)
+  socket.on('newMessage', message => {
+    console.log(`Received: ${message} from user: ${socket.user.username}`)
 
     socket.broadcast.emit('message', {
       user: socket.user,
-      msg
+      message
     })
   })
 
