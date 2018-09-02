@@ -1,68 +1,35 @@
-const express = require('express')
-const logger = require('morgan')
-const app = express()
-const http = require('http').Server(app)
-const io = require('socket.io')(http, { transports: ['websocket', 'polling'] })
-const redisAdapter = require('socket.io-redis')
+const app = require('./app')
+const http = require('./sockets')
 
-io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
+const { PORT } = process.env
 
-app.use(logger('dev'))
+let server = null
 
-app.get('/', (req, res) => {
-  res.status(200).sendFile(`${__dirname}/index.html`)
+app.on('ready', () => {
+  console.log('INDEX: APP READY')
+  // server = app.listen(PORT, () => console.log(`API listening on ${PORT}`))
+  http.listen(PORT, () => console.log(`API listening on ${PORT}`))
 })
 
-app.get('/health', (req, res) => {
-  res.status(200).end()
+// quit on ctrl-c when running docker in terminal
+process.on('SIGINT', function onSigint () {
+  console.info('Got SIGINT (aka ctrl-c in docker). Graceful shutdown ', new Date().toISOString())
+  shutdown()
 })
 
-let userCount = 0
-let userIndex = 0
-
-io.on('connection', socket => {
-  let userAdded = false
-  console.log('User connected.')
-
-  // Get all messages from database and send them to users.
-  // socket.emit('messages', messages)
-
-  socket.on('addUser', username => {
-    if (userAdded) { return }
-
-    socket.user = { id: userIndex, username }
-    userIndex++
-    userCount++
-    userAdded = true
-    socket.emit('login', { userCount })
-
-    socket.broadcast.emit('userJoined', {
-      user: socket.user,
-      userCount
-    })
-  })
-
-  socket.on('newMessage', message => {
-    console.log(`Received: ${message} from user: ${socket.user.username}`)
-    // Save the new message to the database
-    // messages.push(message)
-    socket.broadcast.emit('message', {
-      user: socket.user,
-      message
-    })
-  })
-
-  socket.on('typing', () => {
-    socket.broadcast.emit('typing', { user: socket.user })
-  })
-
-  socket.on('stopTyping', () => {
-    socket.broadcast.emit('stopTyping', { user: socket.user })
-  })
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected.')
-  })
+// quit properly on docker stop
+process.on('SIGTERM', function onSigterm () {
+  console.info('Got SIGTERM (docker container stop). Graceful shutdown ', new Date().toISOString())
+  shutdown()
 })
 
-http.listen(3000, console.log('Listening on port 3000'))
+// shut down server
+function shutdown () {
+  server.close(function onServerClosed (err) {
+    if (err) {
+      console.error(err)
+      process.exitCode = 1
+    }
+    process.exit()
+  })
+}
