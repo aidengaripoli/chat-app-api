@@ -20,21 +20,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     select: false
-  },
-  age: {
-    type: Number,
-    trim: true,
-    default: 18
-  },
-  height: {
-    type: Number,
-    trim: true,
-    default: 160
-  },
-  weight: {
-    type: Number,
-    trim: true,
-    default: 50
   }
 })
 

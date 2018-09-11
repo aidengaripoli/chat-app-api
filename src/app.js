@@ -13,8 +13,9 @@ const app = express()
 
 const routes = require('./routes')
 
+// - ensure the database has connected first before starting the api
+// - also ensures tests do not timeout and fail
 database.connect().then(() => {
-  console.log('APP: MONGODB CONNECTED.. APP EMITTING READY')
   app.emit('ready')
 })
 
@@ -34,6 +35,7 @@ app.get('/', (req, res, next) => {
   res.status(OK).json({ message: 'Chat App API' })
 })
 
+// Health check
 app.get('/health', (req, res) => {
   res.status(200).end()
 })

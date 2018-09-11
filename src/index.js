@@ -7,7 +7,6 @@ let server = null
 
 app.on('ready', () => {
   console.log('INDEX: APP READY')
-  // server = app.listen(PORT, () => console.log(`API listening on ${PORT}`))
   server = http.listen(PORT, () => console.log(`API listening on ${PORT}`))
 })
 

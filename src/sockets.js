@@ -1,53 +1,68 @@
 const app = require('./app')
 
-const http = require('http').Server(app)
-const io = require('socket.io')(http, { transports: ['websocket', 'polling'] })
-const redisAdapter = require('socket.io-redis')
+const jwt = require('jsonwebtoken')
+const { JWT_SECRET } = process.env
+const User = require('mongoose').model('User')
 
+// const Redis = require('ioredis')
+// const redis = new Redis({ host: 'redis', port: 6379 })
+
+const http = require('http').Server(app)
+const io = require('socket.io')(http, {
+  transports: ['websocket'] // force socketio to use websockets
+})
+
+// use redis as a message broker for websocket connections. this allows
+// the api to be horizontally scaled
+const redisAdapter = require('socket.io-redis')
 io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
 
-let userCount = 0
-let userIndex = 0
+// io.use((socket, next) => {})
 
 io.on('connection', async socket => {
-  let userAdded = false
-  console.log('User connected.')
+  // authenticate user on connection
+  socket.authenticated = false
+  socket.on('authenticate', token => {
+    jwt.verify(token, JWT_SECRET, async function (err, payload) {
+      if (err) return
 
-  socket.on('addUser', username => {
-    if (userAdded) { return }
+      socket.authenticated = true
+      let user = await User.findById(payload.subject)
+      socket.user = user
+      socket.emit('authenticated', user._id)
 
-    socket.user = { id: userIndex, username }
-    userIndex++
-    userCount++
-    userAdded = true
-    socket.emit('login', { userCount })
+      io.of('/').adapter.clients((err, clients) => {
+        if (err) return console.error(err)
 
-    socket.broadcast.emit('userJoined', {
-      user: socket.user,
-      userCount
+        const onlineUsers = []
+        clients.forEach(client => {
+          onlineUsers.push(io.sockets.connected[client].user)
+        })
+        io.emit('online_users', onlineUsers)
+      })
+
+      socket.on('disconnect', () => {
+        console.log(`User: ${socket.user._id} - ${socket.user.name} left.`)
+        io.of('/').adapter.clients((err, clients) => {
+          if (err) return console.error(err)
+
+          const onlineUsers = []
+          clients.forEach(client => {
+            onlineUsers.push(io.sockets.connected[client].user)
+          })
+          io.emit('online_users', onlineUsers)
+        })
+      })
     })
   })
 
-  socket.on('newMessage', message => {
-    console.log(`Received: ${message} from user: ${socket.user.username}`)
-
-    socket.broadcast.emit('message', {
-      user: socket.user,
-      message
-    })
-  })
-
-  socket.on('typing', () => {
-    socket.broadcast.emit('typing', { user: socket.user })
-  })
-
-  socket.on('stopTyping', () => {
-    socket.broadcast.emit('stopTyping', { user: socket.user })
-  })
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected.')
-  })
+  // disconnect the socket if it fails to authenticate when it connects
+  setTimeout(() => {
+    if (!socket.authenticated) {
+      console.log(`Disconnecting socket: ${socket.id}`)
+      socket.disconnect()
+    }
+  }, 1000)
 })
 
 module.exports = http
