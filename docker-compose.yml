@@ -15,7 +15,7 @@ services:
       context: .
       args:
         - NODE_ENV=development
-    image: chatapp-api:dev
+    image: chatapp-api
     command: nodemon
     expose:
       - "3000"
@@ -39,16 +39,17 @@ services:
 
   redis:
     image: redis:4.0.11-alpine
-    expose:
-      - "6379"
+    restart: always
+    ports:
+      - "6379:6379"
 
   database:
     image: mongo:4.1.2-xenial
     restart: always
     volumes:
       - database-data:/data/db
-    expose:
-      - "27017"
+    ports:
+      - "27017:27017"
   
 volumes:
   notused:

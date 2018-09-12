@@ -1,5 +1,5 @@
 const app = require('./app')
-const http = require('./sockets')
+const { http } = require('./sockets')
 
 const { PORT } = process.env
 
