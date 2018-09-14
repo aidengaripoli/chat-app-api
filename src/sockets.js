@@ -3,6 +3,8 @@ const app = require('./app')
 const jwt = require('jsonwebtoken')
 const { JWT_SECRET } = process.env
 const User = require('mongoose').model('User')
+const Message = require('mongoose').model('Message')
+const Conversation = require('mongoose').model('Conversation')
 
 const Redis = require('ioredis')
 const redis = new Redis({ host: 'redis', port: 6379 })
