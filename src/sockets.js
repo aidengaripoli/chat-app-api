@@ -47,8 +47,45 @@ io.on('connection', async socket => {
       // emit all user objects to each client
       io.emit('online_users', users)
 
+      // messaging
+      await redis.sadd(socket.user._id, socket.id) // add socket to user set
+      // receive a new message
+      socket.on('send_message', async msg => {
+        console.log(msg)
+        console.log(socket.user)
+        const message = new Message({
+          conversationId: msg.conversationId,
+          body: msg.body,
+          user: socket.user._id
+        })
+        await message.save()
+
+        // determine which clients to send the new message to
+        const conversation = await Conversation.findById(msg.conversationId)
+          .populate({ path: 'participants', select: '_id' })
+        console.log(conversation)
+
+        for (let user of conversation.participants) {
+          const socketIds = await redis.smembers(user._id)
+          if (socketIds) {
+            for (let socketId of socketIds) {
+              if (socketId !== socket.id) {
+                io.to(`${socketId}`).emit('new_message', { ...msg, user: socket.user })
+              }
+            }
+          }
+        }
+      })
+
       socket.on('disconnect', async () => {
         console.log(`User: ${socket.user._id} - ${socket.user.name} left.`)
+
+        const connectedSockets = await redis.scard(socket.user._id)
+        if (connectedSockets === 1) {
+          await redis.del(socket.user._id)
+        }
+        await redis.srem(socket.user._id, socket.id)
+
         // remove user ID from redis
         await redis.srem('online_users', socket.user._id)
         // get all user ids from redis
