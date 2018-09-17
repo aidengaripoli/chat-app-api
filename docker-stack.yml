@@ -6,51 +6,47 @@ services:
     command: --api --docker
     ports:
       - "80:80"
-      - "8000:8080"
+      - "$TRAEFIK_PUBLIC_PORT:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
   api:
-    build:
-      context: .
-      args:
-        - NODE_ENV=development
-    image: chatapp-api
-    command: nodemon
+    image: aidengaripoli/chatapp-api:$VERSION
     expose:
       - "3000"
-    volumes:
-      - .:/opt/app:delegated
-      - ./package.json:/opt/package.json
-      - ./package-lock.json:/opt/package-lock.json
-      - notused:/opt/app/node_modules
-    environment:
-      - JWT_SECRET=secret
-      - NODE_ENV=development
-      - DB_HOST=database
-      - DB_NAME=chatapp
-      - DB_PORT=27017
     depends_on:
       - database
       - redis
-    user: root
+    environment:
+      - JWT_SECRET=$JWT_SECRET
+      - NODE_ENV=production
+      - DB_HOST=database
+      - DB_NAME=chatapp
+      - DB_PORT=27017
     labels:
       - "traefik.frontend.rule=PathPrefix:/"
+    deploy:
+      replicas: 2
 
   redis:
     image: redis:4.0.11-alpine
-    restart: always
     ports:
-      - "6379:6379"
+      - "$REDIS_PUBLIC_PORT:6379"
 
   database:
     image: mongo:4.0.2-xenial
-    restart: always
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=$MONGO_USERNAME
+    #   - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
     volumes:
       - database-data:/data/db
     ports:
-      - "27017:27017"
-  
+      - "$MONGO_PUBLIC_PORT:27017"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
 volumes:
   notused:
   database-data:
