@@ -11,7 +11,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   api:
-    image: aidengaripoli/chatapp-api:$VERSION
+    image: aidengaripoli/chat-app-api:$VERSION
     expose:
       - "3000"
     depends_on:
@@ -21,7 +21,7 @@ services:
       - JWT_SECRET=$JWT_SECRET
       - NODE_ENV=production
       - DB_HOST=database
-      - DB_NAME=chatapp
+      - DB_NAME=chat-app
       - DB_PORT=27017
     labels:
       - "traefik.frontend.rule=PathPrefix:/"

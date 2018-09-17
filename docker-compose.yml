@@ -15,7 +15,7 @@ services:
       context: .
       args:
         - NODE_ENV=development
-    image: chatapp-api
+    image: chat-app-api
     command: nodemon
     expose:
       - "3000"
@@ -28,7 +28,7 @@ services:
       - JWT_SECRET=secret
       - NODE_ENV=development
       - DB_HOST=database
-      - DB_NAME=chatapp
+      - DB_NAME=chat-app
       - DB_PORT=27017
     depends_on:
       - database
