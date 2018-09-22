@@ -22,14 +22,12 @@ io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
 
 io.on('connection', async socket => {
   // authenticate user on connection
-  console.log('Socket Connected.')
   socket.authenticated = false
 
   socket.on('authenticate', token => {
     jwt.verify(token, JWT_SECRET, async function (err, payload) {
       if (err) return
 
-      console.log(`Socket: ${socket.id}, User: ${payload.subject} - authenticated.`)
       socket.authenticated = true
 
       // attach the user object to the socket connection
@@ -76,8 +74,6 @@ io.on('connection', async socket => {
       })
 
       socket.on('disconnect', async () => {
-        console.log(`User: ${socket.user._id} - ${socket.user.name} left.`)
-
         const connectedSockets = await redis.scard(socket.user._id)
         if (connectedSockets === 1) {
           await redis.del(socket.user._id)
@@ -99,7 +95,6 @@ io.on('connection', async socket => {
   // disconnect the socket if it fails to authenticate when it connects
   setTimeout(() => {
     if (!socket.authenticated) {
-      console.log(`Socket failed to authenticate - disconnecting socket: ${socket.id}`)
       socket.disconnect()
     }
   }, 1000)
