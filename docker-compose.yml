@@ -1,5 +1,9 @@
 version: '3.1'
 
+volumes:
+  notused:
+  database-data:
+
 services:
   traefik:
     image: traefik:1.6.6-alpine
@@ -17,8 +21,6 @@ services:
         - NODE_ENV=development
     image: chat-app-api
     command: nodemon
-    expose:
-      - "3000"
     volumes:
       - .:/opt/app:delegated
       - ./package.json:/opt/package.json
@@ -35,7 +37,10 @@ services:
       - redis
     user: root
     labels:
-      - "traefik.frontend.rule=PathPrefix:/"
+      - "traefik.enable=true"
+      - "traefik.basic.frontend.rule=PathPrefix:/"
+      - "traefik.basic.port=3000"
+      - "traefik.basic.protocol=http"
 
   redis:
     image: redis:4.0.11-alpine
@@ -50,7 +55,3 @@ services:
       - database-data:/data/db
     ports:
       - "27017:27017"
-  
-volumes:
-  notused:
-  database-data:

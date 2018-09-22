@@ -1,19 +1,33 @@
 version: '3.1'
 
+volumes:
+  notused:
+  database-data:
+
+networks:
+  web:
+
 services:
   traefik:
     image: traefik:1.6.6-alpine
     command: --api --docker
     ports:
       - "80:80"
+      - "443:443"
       - "$TRAEFIK_PUBLIC_PORT:8080"
+    networks:
+      - web
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # - ./traefik.toml:/traefik.toml
+      # - ./acme.json:/acme.json
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   api:
     image: aidengaripoli/chat-app-api:$VERSION
-    expose:
-      - "3000"
     depends_on:
       - database
       - redis
@@ -23,10 +37,20 @@ services:
       - DB_HOST=database
       - DB_NAME=chat-app
       - DB_PORT=27017
-    labels:
-      - "traefik.frontend.rule=PathPrefix:/"
+    networks:
+      - web
+      - default
     deploy:
       replicas: 2
+      labels:
+        - "traefik.docker.network=web"
+        - "traefik.enable=true"
+        - "traefik.basic.frontend.rule=Host:d1vfuvahl715ip.cloudfront.net"
+        - "traefik.basic.port=3000"
+        - "traefik.basic.protocol=http"
+        # - "traefik.admin.frontend.rule=Host:admin-app.my-awesome-app.org"
+        # - "traefik.admin.protocol=https"
+        # - "traefik.admin.port=9443"
 
   redis:
     image: redis:4.0.11-alpine
@@ -46,7 +70,3 @@ services:
       placement:
         constraints:
           - node.role == manager
-
-volumes:
-  notused:
-  database-data:

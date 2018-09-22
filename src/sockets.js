@@ -8,6 +8,7 @@ const Conversation = require('mongoose').model('Conversation')
 
 const Redis = require('ioredis')
 const redis = new Redis({ host: 'redis', port: 6379 })
+console.log(redis)
 
 const http = require('http').Server(app)
 const io = require('socket.io')(http, {
@@ -17,7 +18,11 @@ const io = require('socket.io')(http, {
 // use redis as a message broker for websocket connections. this allows
 // the api to be horizontally scaled
 const redisAdapter = require('socket.io-redis')
-io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
+// io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
+io.adapter(redisAdapter({
+  pubClient: new Redis.Cluster({ host: 'redis', port: 6379 }),
+  subClient: new Redis.Cluster({ host: 'redis', port: 6379 })
+}))
 
 io.on('connection', async socket => {
   // authenticate user on connection
@@ -51,8 +56,6 @@ io.on('connection', async socket => {
       await redis.sadd(socket.user._id, socket.id) // add socket to user set
       // receive a new message
       socket.on('send_message', async msg => {
-        console.log(msg)
-        console.log(socket.user)
         const message = new Message({
           conversationId: msg.conversationId,
           body: msg.body,
@@ -63,7 +66,6 @@ io.on('connection', async socket => {
         // determine which clients to send the new message to
         const conversation = await Conversation.findById(msg.conversationId)
           .populate({ path: 'participants', select: '_id' })
-        console.log(conversation)
 
         for (let user of conversation.participants) {
           const socketIds = await redis.smembers(user._id)
