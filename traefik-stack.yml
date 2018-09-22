@@ -1,0 +1,22 @@
+version: "3.1"
+
+services:
+  traefik:
+    image: traefik:1.6.6
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    networks:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      -	/home/ubuntu/traefik.toml:/traefik.toml
+      - /home/ubuntu/acme.json:/acme.json
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+networks:
+  web:
+    external: true

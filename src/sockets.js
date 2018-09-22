@@ -18,11 +18,7 @@ const io = require('socket.io')(http, {
 // use redis as a message broker for websocket connections. this allows
 // the api to be horizontally scaled
 const redisAdapter = require('socket.io-redis')
-// io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
-io.adapter(redisAdapter({
-  pubClient: new Redis.Cluster({ host: 'redis', port: 6379 }),
-  subClient: new Redis.Cluster({ host: 'redis', port: 6379 })
-}))
+io.adapter(redisAdapter({ host: 'redis', port: 6379 }))
 
 io.on('connection', async socket => {
   // authenticate user on connection

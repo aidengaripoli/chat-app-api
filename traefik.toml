@@ -1,7 +1,12 @@
-debug = false
+debug = true
 
-logLevel = "ERROR"
+logLevel = "DEBUG"
 defaultEntryPoints = ["https","http"]
+
+[api]
+  entryPoint = "traefik"
+  dashboard = true
+  debug = true
 
 [entryPoints]
   [entryPoints.http]
@@ -16,7 +21,7 @@ defaultEntryPoints = ["https","http"]
 
 [docker]
   endpoint = "unix:///var/run/docker.sock"
-  domain = "d1vfuvahl715ip.cloudfront.net"
+  domain = "carted.io"
   watch = true
   swarmMode = true
   exposedByDefault = false
@@ -26,6 +31,5 @@ defaultEntryPoints = ["https","http"]
   storage = "acme.json"
   entryPoint = "https"
   onHostRule = true
-  caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
 [acme.httpChallenge]
   entryPoint = "http"

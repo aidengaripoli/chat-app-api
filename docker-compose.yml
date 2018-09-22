@@ -38,9 +38,9 @@ services:
     user: root
     labels:
       - "traefik.enable=true"
-      - "traefik.basic.frontend.rule=PathPrefix:/"
-      - "traefik.basic.port=3000"
-      - "traefik.basic.protocol=http"
+      - "traefik.frontend.rule=PathPrefix:/"
+      - "traefik.port=3000"
+      - "traefik.protocol=http"
 
   redis:
     image: redis:4.0.11-alpine

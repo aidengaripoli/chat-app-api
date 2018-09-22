@@ -1,31 +1,6 @@
 version: '3.1'
 
-volumes:
-  notused:
-  database-data:
-
-networks:
-  web:
-
 services:
-  traefik:
-    image: traefik:1.6.6-alpine
-    command: --api --docker
-    ports:
-      - "80:80"
-      - "443:443"
-      - "$TRAEFIK_PUBLIC_PORT:8080"
-    networks:
-      - web
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      # - ./traefik.toml:/traefik.toml
-      # - ./acme.json:/acme.json
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
   api:
     image: aidengaripoli/chat-app-api:$VERSION
     depends_on:
@@ -39,29 +14,30 @@ services:
       - DB_PORT=27017
     networks:
       - web
-      - default
+      - api
     deploy:
-      replicas: 2
+      replicas: 3
+      placement:
+        constraints:
+          - node.role != manager
       labels:
         - "traefik.docker.network=web"
         - "traefik.enable=true"
-        - "traefik.basic.frontend.rule=Host:d1vfuvahl715ip.cloudfront.net"
-        - "traefik.basic.port=3000"
-        - "traefik.basic.protocol=http"
-        # - "traefik.admin.frontend.rule=Host:admin-app.my-awesome-app.org"
-        # - "traefik.admin.protocol=https"
-        # - "traefik.admin.port=9443"
+        - "traefik.frontend.rule=Host:carted.io"
+        - "traefik.port=3000"
+        - "traefik.protocol=http"
 
   redis:
     image: redis:4.0.11-alpine
+    networks:
+      - api
     ports:
       - "$REDIS_PUBLIC_PORT:6379"
 
   database:
     image: mongo:4.0.2-xenial
-    # environment:
-    #   - MONGO_INITDB_ROOT_USERNAME=$MONGO_USERNAME
-    #   - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
+    networks:
+      - api
     volumes:
       - database-data:/data/db
     ports:
@@ -70,3 +46,12 @@ services:
       placement:
         constraints:
           - node.role == manager
+
+volumes:
+  database-data:
+
+networks:
+  web:
+    external: true
+  api:
+    external: true
