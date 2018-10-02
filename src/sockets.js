@@ -1,14 +1,13 @@
 const app = require('./app')
-
 const jwt = require('jsonwebtoken')
 const { JWT_SECRET } = process.env
 const User = require('mongoose').model('User')
 const Message = require('mongoose').model('Message')
 const Conversation = require('mongoose').model('Conversation')
+// const index = require('./algolia')
 
 const Redis = require('ioredis')
 const redis = new Redis({ host: 'redis', port: 6379 })
-console.log(redis)
 
 const http = require('http').Server(app)
 const io = require('socket.io')(http, {
@@ -48,14 +47,28 @@ io.on('connection', async socket => {
 
       // messaging
       await redis.sadd(socket.user._id, socket.id) // add socket to user set
+
       // receive a new message
       socket.on('send_message', async msg => {
-        const message = new Message({
+        let message = new Message({
           conversationId: msg.conversationId,
           body: msg.body,
           user: socket.user._id
         })
         await message.save()
+
+        message = await Message.findById(message._id).populate('user')
+
+        // search
+        // const populatedMessage = await Message.populate(message, {
+        //   path: 'user',
+        //   select: 'name'
+        // })
+
+        // index.addObject(populatedMessage, (err, content) => {
+        //   if (err) console.error(err)
+        //   console.log(`object ID: ${content}`)
+        // })
 
         // determine which clients to send the new message to
         const conversation = await Conversation.findById(msg.conversationId)
@@ -66,7 +79,21 @@ io.on('connection', async socket => {
           if (socketIds) {
             for (let socketId of socketIds) {
               if (socketId !== socket.id) {
-                io.to(`${socketId}`).emit('new_message', { ...msg, user: socket.user })
+                io.to(`${socketId}`).emit('new_message', message)
+              }
+            }
+          }
+        }
+      })
+
+      // new conversation
+      socket.on('new_conversation', async conversation => {
+        for (let participant of conversation.participants) {
+          const socketIds = await redis.smembers(participant._id)
+          if (socketIds) {
+            for (let socketId of socketIds) {
+              if (socketId !== socket.id) {
+                io.to(`${socketId}`).emit('new_conversation', conversation)
               }
             }
           }

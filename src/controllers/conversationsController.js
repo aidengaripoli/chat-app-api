@@ -3,10 +3,10 @@ const Message = mongoose.model('Message')
 const Conversation = mongoose.model('Conversation')
 
 exports.all = async (req, res) => {
-  // fetch all conversation ids
-  const conversations = await Conversation.find({ participants: req.user._id }).select('_id')
+  // fetch all conversation
+  const conversations = await Conversation.find({ participants: req.user._id })
+    .populate('participants')
 
-  // loop through each conversation id, fetch all the messages for the conversation
   const fullConversations = {}
   for (let conversation of conversations) {
     const messages = await Message
@@ -17,8 +17,20 @@ exports.all = async (req, res) => {
         path: 'user',
         select: 'name'
       })
-    fullConversations[conversation._id] = messages.reverse()
+    fullConversations[conversation._id] = {
+      messages: messages.reverse(),
+      participants: conversation.participants
+    }
   }
 
   res.status(200).json(fullConversations)
+}
+
+exports.create = async (req, res) => {
+  let participants = [req.user._id, ...req.body]
+  const conversation = new Conversation({ participants })
+  await conversation.save()
+  const newConversation = await Conversation.findById(conversation._id)
+    .populate('participants')
+  res.status(201).json(newConversation)
 }

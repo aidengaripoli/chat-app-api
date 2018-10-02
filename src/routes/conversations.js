@@ -10,9 +10,9 @@ router.get('/',
   catchErrors(conversationsController.all)
 )
 
-// router.get('/profile',
-//   authController.authenticate('jwt'),
-//   conversationsController.profile
-// )
+router.post('/',
+  authController.authenticate('jwt'),
+  catchErrors(conversationsController.create)
+)
 
 module.exports = router
